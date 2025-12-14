@@ -12,6 +12,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
     symptom: '',
     heartRate: '',
     temperature: '',
+    oxygenSaturation: '',
     systole: '',
     diastole: '',
   })
@@ -118,6 +119,19 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               placeholder="e.g. 36.7"
               value={form.temperature}
               onChange={handleChange('temperature')}
+            />
+          </label>
+
+          <label className="hf-field">
+            <span className="hf-label">Oxygen saturation (%)</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              inputMode="numeric"
+              placeholder="e.g. 98"
+              value={form.oxygenSaturation}
+              onChange={handleChange('oxygenSaturation')}
             />
           </label>
 
