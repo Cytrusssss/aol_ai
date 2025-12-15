@@ -1,33 +1,58 @@
-import { useState } from 'react'
-import './health_form.css'
+import { useState } from "react";
+import "./health_form.css";
+import usePredict from "../hooks/usePredict";
+import type { PatientInput, PredictionResponse } from "../service/api";
 
 type HealthFormPageProps = {
-  username?: string
-}
+  username?: string;
+  onDiagnosisComplete: (result: PredictionResponse) => void;
+};
 
-export default function HealthFormPage({ username }: HealthFormPageProps) {
+export default function HealthFormPage({
+  username,
+  onDiagnosisComplete,
+}: HealthFormPageProps) {
   const [form, setForm] = useState({
-    gender: '',
-    age: '',
-    symptom: '',
-    heartRate: '',
-    temperature: '',
-    oxygenSaturation: '',
-    systole: '',
-    diastole: '',
-  })
+    gender: "",
+    age: "",
+    symptom: "",
+    heartRate: "",
+    temperature: "",
+    oxygenSaturation: "",
+    systole: "",
+    diastole: "",
+  });
 
-  const handleChange = (field: keyof typeof form) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
-  ) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }))
-  }
+  const { predictSentence } = usePredict();
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault()
-    // Placeholder submit handler; integrate with backend as needed.
-    console.log('Submitted form', form)
-  }
+  const handleChange =
+    (field: keyof typeof form) =>
+    (
+      event: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >
+    ) => {
+      setForm((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const response = await predictSentence({
+        "Oxygen_Saturation_%": Number(form.oxygenSaturation),
+        symptoms_description: form.symptom,
+        Body_Temperature_C: Number(form.temperature),
+        Heart_Rate_bpm: Number(form.heartRate),
+        Systolic: Number(form.systole),
+        Diastolic: Number(form.diastole),
+        Age: Number(form.age),
+        Gender: form.gender as PatientInput.Gender,
+      });
+      onDiagnosisComplete(response);
+    } catch (error) {
+      alert("There was an error submitting the form. Please try again.");
+    }
+  };
 
   return (
     <main className="health-form">
@@ -40,7 +65,9 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
       <section className="hf-card">
         <header className="hf-header">
           <p className="hf-eyebrow">Health intake</p>
-          <h2 className="hf-greeting">{username ? `Hello ${username}` : 'Hello there'}</h2>
+          <h2 className="hf-greeting">
+            {username ? `Hello ${username}` : "Hello there"}
+          </h2>
           <h1 className="hf-title">Provide your details</h1>
         </header>
 
@@ -52,9 +79,9 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
                 <input
                   type="radio"
                   name="gender"
-                  value="male"
-                  checked={form.gender === 'male'}
-                  onChange={handleChange('gender')}
+                  value="Male"
+                  checked={form.gender === "Male"}
+                  onChange={handleChange("gender")}
                   required
                 />
                 <span>Male</span>
@@ -63,9 +90,9 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
                 <input
                   type="radio"
                   name="gender"
-                  value="female"
-                  checked={form.gender === 'female'}
-                  onChange={handleChange('gender')}
+                  value="Female"
+                  checked={form.gender === "Female"}
+                  onChange={handleChange("gender")}
                   required
                 />
                 <span>Female</span>
@@ -81,7 +108,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               inputMode="numeric"
               placeholder="e.g. 29"
               value={form.age}
-              onChange={handleChange('age')}
+              onChange={handleChange("age")}
               required
             />
           </label>
@@ -92,7 +119,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               rows={3}
               placeholder="Describe your main symptoms"
               value={form.symptom}
-              onChange={handleChange('symptom')}
+              onChange={handleChange("symptom")}
               required
             />
           </label>
@@ -105,7 +132,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               inputMode="numeric"
               placeholder="e.g. 72"
               value={form.heartRate}
-              onChange={handleChange('heartRate')}
+              onChange={handleChange("heartRate")}
             />
           </label>
 
@@ -118,7 +145,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               inputMode="decimal"
               placeholder="e.g. 36.7"
               value={form.temperature}
-              onChange={handleChange('temperature')}
+              onChange={handleChange("temperature")}
             />
           </label>
 
@@ -131,12 +158,14 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
               inputMode="numeric"
               placeholder="e.g. 98"
               value={form.oxygenSaturation}
-              onChange={handleChange('oxygenSaturation')}
+              onChange={handleChange("oxygenSaturation")}
             />
           </label>
 
           <label className="hf-field hf-span-2">
-            <span className="hf-label">Blood pressure (systole / diastole)</span>
+            <span className="hf-label">
+              Blood pressure (systole / diastole)
+            </span>
             <div className="hf-bp-row">
               <input
                 type="number"
@@ -144,7 +173,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
                 inputMode="numeric"
                 placeholder="120"
                 value={form.systole}
-                onChange={handleChange('systole')}
+                onChange={handleChange("systole")}
               />
               <span className="hf-bp-separator">/</span>
               <input
@@ -153,7 +182,7 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
                 inputMode="numeric"
                 placeholder="80"
                 value={form.diastole}
-                onChange={handleChange('diastole')}
+                onChange={handleChange("diastole")}
               />
             </div>
           </label>
@@ -164,5 +193,5 @@ export default function HealthFormPage({ username }: HealthFormPageProps) {
         </form>
       </section>
     </main>
-  )
+  );
 }
