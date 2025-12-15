@@ -61,7 +61,6 @@ export default function HealthFormPage({
     const systolic = Number(form.systole);
     const diastolic = Number(form.diastole);
 
-    // Validate Age: Integer, 18-79
     if (!form.age || isNaN(age)) {
       newErrors.age = "Age is required";
     } else if (age < 18 || age > 79) {
@@ -70,19 +69,15 @@ export default function HealthFormPage({
       newErrors.age = "Age must be a whole number";
     }
 
-    // Validate Gender: "Male" or "Female"
     if (!form.gender || (form.gender !== "Male" && form.gender !== "Female")) {
       newErrors.gender = "Gender must be Male or Female";
     }
 
-    // Validate Symptoms based on form type
     if (formType === 'description') {
-      // symptoms_description: String, any natural language description
       if (!form.symptom || form.symptom.trim() === "") {
         newErrors.symptom = "Symptom description is required";
       }
     } else {
-      // Symptom_1, Symptom_2, Symptom_3: One of the predefined options
       if (!form.symptom1 || !SYMPTOM_OPTIONS.includes(form.symptom1 as any)) {
         newErrors.symptom1 = "Please select a valid symptom";
       }
@@ -94,7 +89,6 @@ export default function HealthFormPage({
       }
     }
 
-    // Validate Heart_Rate_bpm: Integer, 60-120
     if (!form.heartRate || isNaN(heartRate)) {
       newErrors.heartRate = "Heart rate is required";
     } else if (heartRate < 60 || heartRate > 120) {
@@ -103,14 +97,12 @@ export default function HealthFormPage({
       newErrors.heartRate = "Heart rate must be a whole number";
     }
 
-    // Validate Body_Temperature_C: Float, 35.5-40.0
     if (!form.temperature || isNaN(temp)) {
       newErrors.temperature = "Temperature is required";
     } else if (temp < 35.5 || temp > 40.0) {
       newErrors.temperature = "Temperature must be 35.5-40.0°C";
     }
 
-    // Validate Oxygen_Saturation_%: Integer, 90-99
     if (!form.oxygenSaturation || isNaN(o2)) {
       newErrors.oxygenSaturation = "O2 saturation is required";
     } else if (o2 < 90 || o2 > 99) {
@@ -119,7 +111,6 @@ export default function HealthFormPage({
       newErrors.oxygenSaturation = "O2 saturation must be a whole number";
     }
 
-    // Validate Systolic: Integer, 90-180
     if (!form.systole || isNaN(systolic)) {
       newErrors.systole = "Systolic is required";
     } else if (systolic < 90 || systolic > 180) {
@@ -128,7 +119,6 @@ export default function HealthFormPage({
       newErrors.systole = "Systolic must be a whole number";
     }
 
-    // Validate Diastolic: Integer, 60-120
     if (!form.diastole || isNaN(diastolic)) {
       newErrors.diastole = "Diastolic is required";
     } else if (diastolic < 60 || diastolic > 120) {
