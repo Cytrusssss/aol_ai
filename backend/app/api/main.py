@@ -9,10 +9,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, conint, confloat
 
-# =============================================================================
-# Configuration
-# =============================================================================
-
 MODEL_PATH = os.getenv("MODEL_PATH", "../model/diagnosis_model.keras")
 SCALER_PATH = os.getenv("SCALER_PATH", "../model/scaler.pkl")
 ENCODER_PATH = os.getenv("ENCODER_PATH", "../model/encoder.pkl")
@@ -54,9 +50,6 @@ DIAGNOSIS_ENCODING = {
 
 REVERSE_DIAGNOSIS = {v: k for k, v in DIAGNOSIS_ENCODING.items()}
 
-# =============================================================================
-# Jaro-Winkler Distance Implementation
-# =============================================================================
 
 def jaro_distance(s1: str, s2: str) -> float:
     """
@@ -143,10 +136,6 @@ def jaro_winkler_similarity(s1: str, s2: str, p: float = 0.1) -> float:
             break
     
     return jaro + prefix * p * (1 - jaro)
-
-# =============================================================================
-# Pydantic Models
-# =============================================================================
 
 class PatientInput(BaseModel):
     """Patient input with text-based symptom description"""
@@ -275,10 +264,6 @@ encoder = None
 encoded_col_names:  Optional[list[str]] = None
 feature_columns: Optional[list[str]] = None
 
-# =============================================================================
-# Startup
-# =============================================================================
-
 @app.on_event("startup")
 def load_artifacts():
     global model, scaler, encoder, encoded_col_names, feature_columns
@@ -314,9 +299,6 @@ def load_artifacts():
     feature_columns = NUMERICAL_COLS + encoded_col_names
     print(f"✓ Expected {len(feature_columns)} features: {feature_columns[: 5]}...")
 
-# =============================================================================
-# Symptom Extraction
-# =============================================================================
 
 def extract_symptoms_from_text(text: str, top_n: int = 3, threshold: float = 0.75) -> tuple[list[str], dict[str, float]]:
     """
@@ -343,24 +325,19 @@ def extract_symptoms_from_text(text: str, top_n: int = 3, threshold: float = 0.7
     for symptom in VALID_SYMPTOMS: 
         symptom_lower = symptom.lower()
         
-        # Check for exact match (whole phrase)
         if symptom_lower in text_lower:
             symptom_scores[symptom] = 1.0
             continue
         
-        # Check each word in the symptom
         symptom_words = symptom_lower.split()
         max_score = 0.0
         
-        # For multi-word symptoms, check phrase similarity
         if len(symptom_words) > 1:
-            # Try to find consecutive words
             for i in range(len(words) - len(symptom_words) + 1):
                 phrase = ' '.join(words[i:i+len(symptom_words)])
                 phrase_score = jaro_winkler_similarity(symptom_lower, phrase)
                 max_score = max(max_score, phrase_score)
         
-        # Check individual word matches
         for symptom_word in symptom_words:
             for text_word in words:
                 score = jaro_winkler_similarity(symptom_word, text_word)
@@ -369,14 +346,11 @@ def extract_symptoms_from_text(text: str, top_n: int = 3, threshold: float = 0.7
         if max_score >= threshold:
             symptom_scores[symptom] = max_score
     
-    # Sort by score
     sorted_symptoms = sorted(symptom_scores.items(), key=lambda x: x[1], reverse=True)
     
-    # Get top N symptoms
     matched_symptoms = [symptom for symptom, score in sorted_symptoms[: top_n]]
     scores_dict = {symptom: score for symptom, score in sorted_symptoms[:top_n]}
     
-    # If we don't have enough symptoms, use most common defaults
     default_symptoms = ["Fatigue", "Headache", "Body ache"]
     while len(matched_symptoms) < top_n:
         for default in default_symptoms:
@@ -389,9 +363,7 @@ def extract_symptoms_from_text(text: str, top_n: int = 3, threshold: float = 0.7
     
     return matched_symptoms[: top_n], scores_dict
 
-# =============================================================================
-# Preprocessing
-# =============================================================================
+
 
 def preprocess_input(payload: PatientInputStructured) -> np.ndarray:
     """Preprocess input for model prediction"""
@@ -452,9 +424,6 @@ def interpret_prediction(pred_vector: np.ndarray) -> dict:
         "all_probabilities": prob_dict
     }
 
-# =============================================================================
-# Routes
-# =============================================================================
 @app.get("/")
 def root():
     import datetime
@@ -525,7 +494,6 @@ def predict_with_sentence(input_data: PatientInput):
     if model is None or scaler is None or encoder is None:
         raise HTTPException(status_code=500, detail="Model artifacts not loaded")
 
-    # Extract symptoms from text
     try:
         symptoms, scores = extract_symptoms_from_text(input_data.symptoms_description, top_n=3)
         print(f"📝 Extracted symptoms: {symptoms}")
@@ -533,7 +501,6 @@ def predict_with_sentence(input_data: PatientInput):
     except Exception as e: 
         raise HTTPException(status_code=400, detail=f"Symptom extraction failed: {str(e)}")
 
-    # Create structured input
     structured_input = PatientInputStructured(
         Age=input_data.Age,
         Gender=input_data.Gender,
@@ -547,7 +514,6 @@ def predict_with_sentence(input_data: PatientInput):
         Diastolic=input_data.Diastolic
     )
 
-    # Preprocess
     try:
         x = preprocess_input(structured_input)
     except HTTPException: 
@@ -555,7 +521,6 @@ def predict_with_sentence(input_data: PatientInput):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Preprocessing failed: {str(e)}")
 
-    # Predict
     try: 
         preds = model.predict(x, verbose=0)
     except Exception as e:
@@ -563,7 +528,6 @@ def predict_with_sentence(input_data: PatientInput):
 
     pred_vec = preds[0] if preds.ndim > 1 else preds
 
-    # Build response
     result = interpret_prediction(pred_vec)
     result["extracted_symptoms"] = symptoms
     result["extraction_scores"] = scores
@@ -634,9 +598,6 @@ def predict_diagnosis(input_data: PatientInputDirect):
     
     return interpret_prediction(pred_vec)
 
-# =============================================================================
-# Main
-# =============================================================================
 
 if __name__ == "__main__": 
     import uvicorn

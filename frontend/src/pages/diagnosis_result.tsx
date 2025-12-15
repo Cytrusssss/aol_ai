@@ -1,10 +1,13 @@
 import { useState } from "react";
 import "./diagnosis_result.css";
-import type { PredictionResponse } from "../service/api";
+import type {
+  PredictionResponse,
+  PredictionResponseDirect,
+} from "../service/api";
 
 type DiagnosisResultPageProps = {
   username?: string;
-  result: PredictionResponse;
+  result: PredictionResponse | PredictionResponseDirect;
   onStartOver: () => void;
 };
 
@@ -16,6 +19,13 @@ export default function DiagnosisResultPage({
   const [showDetails, setShowDetails] = useState(false);
 
   const confidencePercent = (result.confidence * 100).toFixed(1);
+
+  // Type guard to check if result has extracted symptoms
+  const hasExtractedSymptoms = (
+    res: PredictionResponse | PredictionResponseDirect
+  ): res is PredictionResponse => {
+    return "extracted_symptoms" in res;
+  };
 
   return (
     <main className="diagnosis-result">
@@ -53,22 +63,26 @@ export default function DiagnosisResultPage({
 
           {showDetails && (
             <div className="dr-details">
-              <div className="dr-detail-block">
-                <h3 className="dr-detail-title">Extracted Symptoms</h3>
-                <div className="dr-symptom-list">
-                  {result.extracted_symptoms.map((symptom, index) => (
-                    <div key={index} className="dr-symptom-item">
-                      <span className="dr-symptom-name">{symptom}</span>
-                      {result.extraction_scores[symptom] && (
-                        <span className="dr-symptom-score">
-                          {(result.extraction_scores[symptom] * 100).toFixed(0)}
-                          %
-                        </span>
-                      )}
-                    </div>
-                  ))}
+              {hasExtractedSymptoms(result) && (
+                <div className="dr-detail-block">
+                  <h3 className="dr-detail-title">Extracted Symptoms</h3>
+                  <div className="dr-symptom-list">
+                    {result.extracted_symptoms.map((symptom, index) => (
+                      <div key={index} className="dr-symptom-item">
+                        <span className="dr-symptom-name">{symptom}</span>
+                        {result.extraction_scores[symptom] && (
+                          <span className="dr-symptom-score">
+                            {(result.extraction_scores[symptom] * 100).toFixed(
+                              0
+                            )}
+                            %
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="dr-detail-block">
                 <h3 className="dr-detail-title">All Probabilities</h3>

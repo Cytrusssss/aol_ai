@@ -4,9 +4,12 @@ import "./index.css";
 import HealthFormPage from "./pages/health_form";
 import LandingPage from "./pages/landing_page";
 import DiagnosisResultPage from "./pages/diagnosis_result";
-import { OpenAPI, type PredictionResponse } from "./service/api";
+import {
+  OpenAPI,
+  type PredictionResponse,
+  type PredictionResponseDirect,
+} from "./service/api";
 
-// Configure the API base URL
 OpenAPI.BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function AppRouter() {
@@ -14,8 +17,9 @@ function AppRouter() {
     sessionStorage.getItem("username")
   );
   const [path, setPath] = useState(() => window.location.pathname || "/");
-  const [diagnosisResult, setDiagnosisResult] =
-    useState<PredictionResponse | null>(null);
+  const [diagnosisResult, setDiagnosisResult] = useState<
+    PredictionResponse | PredictionResponseDirect | null
+  >(null);
 
   useEffect(() => {
     const onPop = () => setPath(window.location.pathname || "/");
@@ -36,7 +40,9 @@ function AppRouter() {
     go("/health");
   };
 
-  const handleDiagnosisComplete = (result: PredictionResponse) => {
+  const handleDiagnosisComplete = (
+    result: PredictionResponse | PredictionResponseDirect
+  ) => {
     setDiagnosisResult(result);
     go("/result");
   };

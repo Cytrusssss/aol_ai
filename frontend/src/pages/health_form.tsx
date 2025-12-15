@@ -1,7 +1,12 @@
 import { useState } from "react";
 import "./health_form.css";
 import usePredict from "../hooks/usePredict";
-import type { PatientInput, PatientInputDirect, PredictionResponse } from "../service/api";
+import type {
+  PatientInput,
+  PatientInputDirect,
+  PredictionResponse,
+  PredictionResponseDirect,
+} from "../service/api";
 
 const SYMPTOM_OPTIONS = [
   "Fatigue",
@@ -16,14 +21,18 @@ const SYMPTOM_OPTIONS = [
 
 type HealthFormPageProps = {
   username?: string;
-  onDiagnosisComplete: (result: PredictionResponse) => void;
+  onDiagnosisComplete: (
+    result: PredictionResponse | PredictionResponseDirect
+  ) => void;
 };
 
 export default function HealthFormPage({
   username,
   onDiagnosisComplete,
 }: HealthFormPageProps) {
-  const [formType, setFormType] = useState<'description' | 'individual'>('description')
+  const [formType, setFormType] = useState<"description" | "individual">(
+    "description"
+  );
   const [form, setForm] = useState({
     gender: "",
     age: "",
@@ -39,7 +48,7 @@ export default function HealthFormPage({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { predictSentence } = usePredict();
+  const { predictSentence, predictDirect } = usePredict();
 
   const handleChange =
     (field: keyof typeof form) =>
@@ -73,7 +82,7 @@ export default function HealthFormPage({
       newErrors.gender = "Gender must be Male or Female";
     }
 
-    if (formType === 'description') {
+    if (formType === "description") {
       if (!form.symptom || form.symptom.trim() === "") {
         newErrors.symptom = "Symptom description is required";
       }
@@ -146,18 +155,27 @@ export default function HealthFormPage({
         Gender: form.gender as PatientInput.Gender,
       };
 
-      const payload = formType === 'description'
-        ? ({ ...baseData, symptoms_description: form.symptom } as PatientInput)
-        : ({
-            ...baseData,
-            Symptom_1: form.symptom1 as PatientInputDirect.Symptom_1,
-            Symptom_2: form.symptom2 as PatientInputDirect.Symptom_2,
-            Symptom_3: form.symptom3 as PatientInputDirect.Symptom_3,
-          } as PatientInputDirect);
+      let response;
 
-      const response = await predictSentence(payload as any);
+      if (formType === "description") {
+        const payload: PatientInput = {
+          ...baseData,
+          symptoms_description: form.symptom,
+        };
+        response = await predictSentence(payload);
+      } else {
+        const payload: PatientInputDirect = {
+          ...baseData,
+          Symptom_1: form.symptom1 as PatientInputDirect.Symptom_1,
+          Symptom_2: form.symptom2 as PatientInputDirect.Symptom_2,
+          Symptom_3: form.symptom3 as PatientInputDirect.Symptom_3,
+        };
+        response = await predictDirect(payload);
+      }
+
       onDiagnosisComplete(response);
     } catch (error) {
+      console.error("Form submission error:", error);
       alert("There was an error submitting the form. Please try again.");
     }
   };
@@ -183,15 +201,19 @@ export default function HealthFormPage({
           <div className="hf-type-toggle hf-span-2">
             <button
               type="button"
-              className={`hf-toggle-btn ${formType === 'description' ? 'active' : ''}`}
-              onClick={() => setFormType('description')}
+              className={`hf-toggle-btn ${
+                formType === "description" ? "active" : ""
+              }`}
+              onClick={() => setFormType("description")}
             >
               Description
             </button>
             <button
               type="button"
-              className={`hf-toggle-btn ${formType === 'individual' ? 'active' : ''}`}
-              onClick={() => setFormType('individual')}
+              className={`hf-toggle-btn ${
+                formType === "individual" ? "active" : ""
+              }`}
+              onClick={() => setFormType("individual")}
             >
               Individual Symptoms
             </button>
@@ -240,7 +262,7 @@ export default function HealthFormPage({
             {errors.age && <span className="hf-error">{errors.age}</span>}
           </label>
 
-          {formType === 'description' ? (
+          {formType === "description" ? (
             <label className="hf-field hf-span-2">
               <span className="hf-label">Symptom Description</span>
               <textarea
@@ -250,7 +272,9 @@ export default function HealthFormPage({
                 onChange={handleChange("symptom")}
                 required
               />
-              {errors.symptom && <span className="hf-error">{errors.symptom}</span>}
+              {errors.symptom && (
+                <span className="hf-error">{errors.symptom}</span>
+              )}
             </label>
           ) : (
             <>
@@ -263,10 +287,14 @@ export default function HealthFormPage({
                 >
                   <option value="">Select symptom</option>
                   {SYMPTOM_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
                 </select>
-                {errors.symptom1 && <span className="hf-error">{errors.symptom1}</span>}
+                {errors.symptom1 && (
+                  <span className="hf-error">{errors.symptom1}</span>
+                )}
               </label>
               <label className="hf-field">
                 <span className="hf-label">Symptom 2</span>
@@ -277,10 +305,14 @@ export default function HealthFormPage({
                 >
                   <option value="">Select symptom</option>
                   {SYMPTOM_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
                 </select>
-                {errors.symptom2 && <span className="hf-error">{errors.symptom2}</span>}
+                {errors.symptom2 && (
+                  <span className="hf-error">{errors.symptom2}</span>
+                )}
               </label>
               <label className="hf-field">
                 <span className="hf-label">Symptom 3</span>
@@ -291,10 +323,14 @@ export default function HealthFormPage({
                 >
                   <option value="">Select symptom</option>
                   {SYMPTOM_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
                 </select>
-                {errors.symptom3 && <span className="hf-error">{errors.symptom3}</span>}
+                {errors.symptom3 && (
+                  <span className="hf-error">{errors.symptom3}</span>
+                )}
               </label>
             </>
           )}
@@ -311,7 +347,9 @@ export default function HealthFormPage({
               onChange={handleChange("heartRate")}
               required
             />
-            {errors.heartRate && <span className="hf-error">{errors.heartRate}</span>}
+            {errors.heartRate && (
+              <span className="hf-error">{errors.heartRate}</span>
+            )}
           </label>
 
           <label className="hf-field">
@@ -327,7 +365,9 @@ export default function HealthFormPage({
               onChange={handleChange("temperature")}
               required
             />
-            {errors.temperature && <span className="hf-error">{errors.temperature}</span>}
+            {errors.temperature && (
+              <span className="hf-error">{errors.temperature}</span>
+            )}
           </label>
 
           <label className="hf-field">
@@ -342,7 +382,9 @@ export default function HealthFormPage({
               onChange={handleChange("oxygenSaturation")}
               required
             />
-            {errors.oxygenSaturation && <span className="hf-error">{errors.oxygenSaturation}</span>}
+            {errors.oxygenSaturation && (
+              <span className="hf-error">{errors.oxygenSaturation}</span>
+            )}
           </label>
 
           <label className="hf-field hf-span-2">
@@ -361,7 +403,9 @@ export default function HealthFormPage({
                   onChange={handleChange("systole")}
                   required
                 />
-                {errors.systole && <span className="hf-error">{errors.systole}</span>}
+                {errors.systole && (
+                  <span className="hf-error">{errors.systole}</span>
+                )}
               </div>
               <span className="hf-bp-separator">/</span>
               <div>
@@ -375,7 +419,9 @@ export default function HealthFormPage({
                   onChange={handleChange("diastole")}
                   required
                 />
-                {errors.diastole && <span className="hf-error">{errors.diastole}</span>}
+                {errors.diastole && (
+                  <span className="hf-error">{errors.diastole}</span>
+                )}
               </div>
             </div>
           </label>
